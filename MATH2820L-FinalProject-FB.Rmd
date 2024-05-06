@@ -1,0 +1,212 @@
+---
+title: "FinalProject-FardeenBablu"
+author: "Fardeen Bablu"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+```{r, message=F, warning=F}
+# Import necessary libraries
+library(tidyverse)
+library(sylcount)
+library(ggplot2)
+
+unsortedDrugs = read.csv("drugs.csv")
+drugs = unsortedDrugs[order(unsortedDrugs$drugName), ]
+
+# Readability score function
+readabilityScore = function(textData) {
+  scores = sapply(textData, function(text) {
+    readability(text)$re
+  })
+  return(scores)
+}
+
+# Word count function
+wordCount = function(text_data) {
+  count = sapply(strsplit(text_data, "\\s+"), length)
+  return(count)
+}
+
+# Add relevant predictor variables to drugs data frame
+drugs$charCount = nchar(drugs$review)
+
+drugs$readabilityScore = readabilityScore(drugs$review)
+# Filter -Inf from readability 
+filtered_drugs = drugs %>%
+  filter(readabilityScore > -Inf)
+avgReadability = filtered_drugs %>%
+  group_by(drugName) %>%
+  summarize(avgReadability = mean(readabilityScore, na.rm = TRUE))
+
+
+avgRating = aggregate(rating ~ drugName, data = drugs, FUN = mean)
+colnames(avgRating) = c("drugName", "avgRating")
+
+avgCharCount = aggregate(charCount ~ drugName, data = drugs, FUN = mean)
+colnames(avgCharCount) = c("drugName", "avgCharCount")
+
+reviewCount = aggregate(review ~ drugName, data = drugs, FUN = length)
+colnames(reviewCount) = c("drugName", "reviewCount")
+
+avgUsefulness = aggregate(usefulCount ~ drugName, data = drugs, FUN = mean)
+colnames(avgUsefulness) = c("drugName", "avgUsefulCount")
+
+drugs$wordCount = wordCount(drugs$review)
+
+avgWordCount = aggregate(wordCount ~ drugName, data = drugs, FUN = mean)
+colnames(avgWordCount) = c("drugName", "avgWordCount")
+
+# Add averages to data frame
+drugs = drugs %>%
+  merge(avgRating, by = "drugName", all.x = TRUE) %>%
+  merge(avgCharCount, by = "drugName", all.x = TRUE) %>%
+  merge(reviewCount, by = "drugName", all.x = TRUE) %>%
+  merge(avgUsefulness, by = "drugName", all.x = TRUE) %>%
+  merge(avgWordCount, by = "drugName", all.x = TRUE) %>%
+  merge(avgReadability, by = "drugName", all.x = TRUE)
+
+# Remove singular/irrelevant data point variables from data frame 
+drugs = subset(
+  drugs, select = -c(
+    condition, 
+    review, 
+    rating, 
+    date, 
+    usefulCount, 
+    charCount, 
+    readabilityScore, 
+    wordCount))
+
+# Remove all duplicate drugs
+drugSumm = drugs %>%
+  distinct(drugName, .keep_all = TRUE)
+
+summary(drugSumm)
+head(drugSumm) 
+print(drugSumm)
+```
+
+
+
+```{r, message=F, warning=F}
+library(gridExtra)
+
+### Visualizations
+
+## Histograms
+
+# Visualize distributions of all variables
+hist_avgRating = ggplot(drugSumm, aes(x = avgRating)) +
+  geom_histogram(binwidth = 0.5, fill = "skyblue", color = "black") +
+  labs(title = "Distrib. of Avg. Patient Ratings",
+       x = "10-Star Patient Rating",
+       y = "Frequency")
+
+hist_avgCharCount = ggplot(drugSumm, aes(x = avgCharCount)) +
+  geom_histogram(binwidth = 50, fill = "lightgreen", color = "black") +
+  labs(title = "Distrib. of Avg. Review Character Counts",
+       x = "Review Character Count",
+       y = "Frequency")
+
+hist_reviewCount = ggplot(drugSumm, aes(x = reviewCount)) +
+  geom_histogram(binwidth = 50, fill = "red", color = "black") +
+  labs(title = "Distrib. of Total Reviews Per Drug",
+       x = "Total Reviews",
+       y = "Frequency")
+
+hist_avgUsefulCount = ggplot(drugSumm, aes(x = avgUsefulCount)) +
+  geom_histogram(binwidth = 50, fill = "blue", color = "black") +
+  labs(title = "Distrib. of Avg. Users Who Found Review Useful", 
+       x = "Users Who Found Review Useful",
+       y = "Frequency")
+
+
+hist_avgWordCount = ggplot(drugSumm, aes(x = avgWordCount)) +
+  geom_histogram(binwidth = 50, fill = "purple", color = "black") +
+  labs(title = "Distrib. of Avg. Word Count",
+       x = "Review Word Count",
+       y = "Frequency")
+
+hist_avgReadability = ggplot(drugSumm, aes(x = avgReadability)) +
+  geom_histogram(binwidth = 50, fill = "pink", color = "black") +
+  labs(title = "Distrib. of Avg. Readability Score of Review",
+       x = "Flesch Reading Ease Score",
+       y = "Frequency")
+
+# Arrange plots using grid.arrange
+grid.arrange(hist_avgRating, 
+             hist_avgCharCount, 
+             hist_reviewCount, 
+             hist_avgUsefulCount, 
+             hist_avgWordCount, 
+             hist_avgReadability, ncol = 2)  
+```
+
+```{r, message=F, warning=F}
+library(gridExtra)
+
+### Visualizations
+
+## Scatter plots with linear regression lines and confidence intervals
+
+# Scatter plot of avgRating vs avgCharCount
+scatter_avgRating_vs_avgCharCount = ggplot(drugSumm, aes(x = avgCharCount, y = avgRating)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "blue", fill = "purple", alpha = 0.2) +
+  labs(title = "Average Ratings vs. Average Review Character Counts",
+       x = "Average Review Character Counts",
+       y = "Average Ratings")
+
+# Scatter plot of avgRating vs avgWordCount
+scatter_avgRating_vs_avgWordCount = ggplot(drugSumm, aes(x = avgWordCount, y = avgRating)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "blue", fill = "purple", alpha = 0.2) +
+  labs(title = "Average Ratings vs. Average Word Counts",
+       x = "Average Word Counts",
+       y = "Average Ratings")
+
+# Scatter plot of avgCharCount vs avgWordCount
+scatter_avgCharCount_vs_avgWordCount = ggplot(drugSumm, aes(x = avgWordCount, y = avgCharCount)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "blue", fill = "purple", alpha = 0.2) +
+  labs(title = "Average Review Character Counts vs. Average Word Counts",
+       x = "Average Word Counts",
+       y = "Average Review Character Counts")
+
+# Scatter plot of avgRating vs avgReadability
+scatter_avgRating_vs_avgReadability = ggplot(drugSumm, aes(x = avgReadability, y = avgRating)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "blue", fill = "purple", alpha = 0.2) +
+  labs(title = "Average Ratings vs. Average Readability Score",
+       x = "Average Readability Score",
+       y = "Average Ratings")
+
+# Arrange scatter plots using grid.arrange
+grid.arrange(scatter_avgRating_vs_avgCharCount, 
+             scatter_avgRating_vs_avgWordCount, 
+             scatter_avgCharCount_vs_avgWordCount, 
+             scatter_avgRating_vs_avgReadability, 
+             ncol = 2)  
+
+```
+
+```{r, message=F, warning=F}
+
+# Main linear regression model
+mainModel = lm(avgRating ~ avgCharCount + reviewCount + avgUsefulCount + avgWordCount + avgReadability, data = drugSumm)
+summary(mainModel)
+
+# Scatter plot of avgRating vs. [all other variables combined together]
+mainScatter = ggplot(drugSumm, aes(x = avgCharCount + reviewCount + avgUsefulCount + avgWordCount + avgReadability, y = avgRating)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "blue", fill = "purple", alpha = 0.2) +
+  labs(title = "Average Ratings vs. All Predictor Variables",
+       x = "Combined Predictor Variables",
+       y = "Average Ratings")
+
+# Print the scatter plot with linear regression line and confidence intervals
+print(mainScatter)
+
+```
