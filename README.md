@@ -17,5 +17,5 @@ Make sure you have the necessary R libraries:
 ```r
 install.packages(c("tidyverse", "sylcount", "ggplot2", "gridExtra"))
 ```
-## [Final Report](report.pdf)
-
+## Full Report
+Click [here](report.pdf) for the full report as a pdf.
