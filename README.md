@@ -2,8 +2,8 @@
 This project analyzes patient reviews for various drugs, performing text-based analysis, readability scoring, and visualizations to identify trends in drug efficacy and patient experiences. Here is the [original dataset](https://doi.org/10.24432/C5SK5S)
 
 ## Files
-- `drug_analysis.R`: The main R script for data processing, analysis, and visualization.
-- `drugs.csv`: The dataset containing drug reviews, ratings, and other attributes.
+- `analysis.R`: The main R script for data processing, analysis, and visualization.
+- `detailed_analysis.Rmd`: A detailed walkthrough of the main R script, written in R Markdown.
   
 ## Analysis Overview
 The script performs the following:
