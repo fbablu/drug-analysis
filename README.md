@@ -44,6 +44,13 @@ Regression analysis highlighted significant predictors impacting average drug ra
 
 This project demonstrates the relationship between user engagement metrics and drug ratings. While the model explained only a small proportion of the variance in ratings (adjusted R² = 0.0236), it identified statistically significant predictors that could be useful for healthcare decision-makers to better understand patient experiences.
 
+Considering these findings, the following are the 6 predictors for patient drug ratings:
+- **Average Drug Rating**
+- **Average Character Count**
+- **Average Word Count**
+- **Total Number of Reviews**
+- **Average Usefulness Count**
+- **Average Readability (based on Flesch Reading Ease score)**
 
 ## Full Report
 Click [here](report.pdf) for the full report as a pdf.
